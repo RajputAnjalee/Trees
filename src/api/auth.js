@@ -1,6 +1,7 @@
 import axios from 'axios';
 
-const apiUrl = 'http://localhost:5000/api/auth';
+// const apiUrl = 'http://localhost:5000/api/auth';
+const apiUrl ='https://tree-backend-avvs.onrender.com/api/auth';
 
 // Send OTP to phone number
 export const sendOtp = async (phone_number) => {

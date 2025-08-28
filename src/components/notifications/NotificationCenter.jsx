@@ -13,7 +13,8 @@ const NotificationCenter = () => {
   const fetchNotifications = async () => {
     try {
       setLoading(true);
-      const data = await notificationAPI.getNotifications();
+      // Fetch only the 5 most recent notifications
+      const data = await notificationAPI.getNotifications(1, 5);
       setNotifications(data.notifications || []);
     } catch (error) {
       console.error('Error fetching notifications:', error);

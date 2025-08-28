@@ -1,58 +1,79 @@
 
 import React, { useState, useEffect } from "react";
-import { getOrders, confirmPlanting } from "@/api/orders";
 import { createPageUrl } from "@/utils";
 import { format } from "date-fns";
-import { TreePine, Gift, MapPin, Calendar, Package, CheckCircle, Clock, PartyPopper } from "lucide-react";
+import { TreePine, Gift, MapPin, Calendar, Package, CheckCircle, Clock, PartyPopper, Trash2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { getOrders, confirmPlanting, deleteOrder } from "@/api/orders";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 export default function Orders() {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [user, setUser] = useState(null);
+  const [showAll, setShowAll] = useState(false); // New state for showing all orders
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false); // New state for delete confirmation dialog
+  const [orderToDelete, setOrderToDelete] = useState(null); // New state to store the order to be deleted
 
   useEffect(() => {
-    const loadOrders = async () => {
-      setIsLoading(true);
-      try {
-        const storedUser = localStorage.getItem('user');
-        if (storedUser) {
-          const userObj = JSON.parse(storedUser);
-          setUser(userObj);
-          const response = await getOrders(userObj.id);
-          // Handle the API response structure with saplings array
-          const userOrders = response.saplings || [];
-          setOrders(userOrders);
-        } else {
-          setUser(null);
-          setOrders([]);
-        }
-      } catch (error) {
-        setUser(null);
-        setOrders([]);
-        console.error("Error loading orders:", error);
-      }
-      setIsLoading(false);
-    };
     loadOrders();
   }, []);
 
+  const loadOrders = async () => {
+    setIsLoading(true); // Move this inside, as per outline
+    try {
+      const storedUser = localStorage.getItem('user');
+      if (storedUser) {
+        const userObj = JSON.parse(storedUser);
+        setUser(userObj);
+        const response = await getOrders(userObj.id);
+        setOrders(response.saplings || []);
+      } else {
+        setUser(null);
+        setOrders([]);
+      }
+    } catch (error) {
+      console.error("Error loading orders:", error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (order) => {
+    setOrderToDelete(order);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteOrder = async () => {
+    if (!orderToDelete) return;
+    try {
+      await deleteOrder(orderToDelete._id); // Assuming _id is the key for deletion
+      await loadOrders(); // Refresh the list
+      setDeleteDialogOpen(false); // Close dialog
+      setOrderToDelete(null); // Clear selected order
+      alert("Order deleted successfully!");
+    } catch (error) {
+      console.error("Error deleting order:", error);
+      alert("There was an error deleting the order. Please try again.");
+    }
+  };
+
   const handleConfirmPlanting = async (orderToConfirm) => {
     try {
-      if (!user) return;
-      const newStats = {
-        total_trees_planted: (user.total_trees_planted || 0) + parseInt(orderToConfirm.quantity),
-        trees_self_planted: (user.trees_self_planted || 0) + parseInt(orderToConfirm.quantity),
-      };
-      await confirmPlanting(orderToConfirm._id, user.id, parseInt(orderToConfirm.quantity), newStats);
-      // Update local user stats
-      const updatedUser = { ...user, ...newStats };
-      localStorage.setItem('user', JSON.stringify(updatedUser));
-      setUser(updatedUser);
+      // Use the new API call which should handle both user stats and order status updates on the backend
+      await confirmPlanting(orderToConfirm._id, orderToConfirm.quantity);
+
       // Refresh data
-      const response = await getOrders(user.id);
-      const userOrders = response.saplings || [];
-      setOrders(userOrders);
+      await loadOrders();
       alert("Confirmation successful! Thank you for planting trees.");
     } catch (error) {
       console.error("Error confirming planting:", error);
@@ -125,17 +146,20 @@ export default function Orders() {
 
       {/* Orders List */}
       {orders.length > 0 ? (
-        <div className="space-y-6">
-          {orders.map((order) => (
-            <div key={order.id} className="neumorphic p-6 rounded-3xl">
+        <div className="space-y-4">
+          <div className="space-y-6">
+            {orders.slice(0, showAll ? orders.length : 3).map((order) => (
+            <div key={order._id} className="neumorphic p-6 rounded-3xl">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex items-center gap-4">
-                  <div className="neumorphic-small p-4 rounded-2xl">
-                    {order.is_gift ? (
-                      <Gift className="w-6 h-6 text-purple-600" />
-                    ) : (
-                      <TreePine className="w-6 h-6 text-green-600" />
-                    )}
+                  <div className="flex-shrink-0">
+                    <div className="neumorphic-small p-4 rounded-2xl">
+                      {order.is_gift ? (
+                        <Gift className="w-6 h-6 text-purple-600" />
+                      ) : (
+                        <TreePine className="w-6 h-6 text-green-600" />
+                      )}
+                    </div>
                   </div>
                   <div>
                     <h3 className="text-xl font-bold text-gray-800">
@@ -146,11 +170,23 @@ export default function Orders() {
                 </div>
                 <div className="text-right">
                   <p className="text-2xl font-bold text-green-600">₹{order.total_amount}</p>
-                  <div className="flex items-center gap-2 mt-1">
-                    {getStatusIcon(order.payment_status)}
-                    <span className="text-sm font-medium text-gray-700">
-                      {getStatusText(order.payment_status)}
-                    </span>
+                  <div className="flex items-center justify-end gap-3 mt-1">
+                    <div className="flex items-center gap-2">
+                      {getStatusIcon(order.payment_status)}
+                      <span className="text-sm font-medium text-gray-700">
+                        {getStatusText(order.payment_status)}
+                      </span>
+                    </div>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(order);
+                      }}
+                      className="neumorphic-small p-2 rounded-xl text-red-600 hover:bg-red-100"
+                      title="Delete order"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -185,11 +221,10 @@ export default function Orders() {
                     <span className="font-semibold text-gray-700">Order Date</span>
                   </div>
                   <p className="text-gray-600">
-                    {order.created_date && !isNaN(new Date(order.created_date))
-                      ? format(new Date(order.created_date), 'MMM d, yyyy')
-                      : '-'}
+                    {order.created_date ? format(new Date(order.created_date), 'MMM d, yyyy') : 'N/A'}
                   </p>
                 </div>
+
                 {order.planting_location && (
                   <div className="neumorphic-inset p-4 rounded-2xl">
                     <div className="flex items-center gap-2 mb-2">
@@ -268,16 +303,27 @@ export default function Orders() {
                 </div>
               )}
             </div>
-          ))}
+            ))}
+            
+            {orders.length > 3 && (
+              <div className="flex justify-center pt-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => setShowAll(!showAll)}
+                  className="text-green-600 border-green-600 hover:bg-green-50 neumorphic-small"
+                >
+                  {showAll ? 'Show Less' : `Show All (${orders.length})`}
+                </Button>
+              </div>
+            )}
+          </div>
         </div>
       ) : (
         <div className="neumorphic p-12 rounded-3xl text-center">
-          <TreePine className="w-16 h-16 text-gray-400 mx-auto mb-6" />
+          <Package className="w-16 h-16 text-gray-400 mx-auto mb-6" />
           <h3 className="text-xl font-bold text-gray-800 mb-2">No Orders Yet</h3>
-          <p className="text-gray-600 mb-6">
-            Start your tree planting journey by placing your first order
-          </p>
-          <a 
+          <p className="text-gray-600 mb-6">Your tree planting journey will appear here</p>
+          <a
             href={createPageUrl("Purchase")}
             className="neumorphic-small px-8 py-4 rounded-2xl font-semibold text-green-700 inline-block hover:shadow-lg transition-all duration-200"
           >
@@ -285,6 +331,42 @@ export default function Orders() {
           </a>
         </div>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent className="neumorphic p-8 rounded-3xl border-none">
+            <AlertDialogHeader>
+                <div className="flex justify-center mb-4">
+                    <div className="neumorphic-small p-4 rounded-full">
+                        <Trash2 className="h-8 w-8 text-red-600" />
+                    </div>
+                </div>
+                <AlertDialogTitle className="text-center text-2xl font-bold text-red-700">
+                    Delete Order Confirmation
+                </AlertDialogTitle>
+                <AlertDialogDescription className="text-center text-gray-600 pt-2">
+                    Are you sure you want to delete this order for{' '}
+                    <strong>{orderToDelete?.quantity} sapling{orderToDelete?.quantity > 1 ? 's' : ''}</strong>? 
+                    This action cannot be undone.
+                </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter className="mt-6 flex gap-4">
+                <AlertDialogCancel asChild>
+                    <Button className="flex-1 neumorphic-small px-6 py-3 rounded-2xl font-semibold text-gray-700">
+                        Cancel
+                    </Button>
+                </AlertDialogCancel>
+                <AlertDialogAction asChild>
+                    <Button
+                        onClick={handleDeleteOrder}
+                        className="flex-1 neumorphic-small px-6 py-3 rounded-2xl font-semibold bg-red-500 hover:bg-red-600 text-white"
+                    >
+                        Yes, Delete
+                    </Button>
+                </AlertDialogAction>
+            </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
