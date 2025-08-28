@@ -57,7 +57,7 @@ export const subscribeUserForNotifications = async (fcmToken) => {
     // Store FCM token locally as backup
     localStorage.setItem('fcmToken', fcmToken);
     
-    const response = await fetch('https://tree-backend-avvs.onrender.com/api/notifications/subscribe', {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/subscribe`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -153,7 +153,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch(`https://tree-backend-avvs.onrender.com/api/notifications?page=${page}&limit=${limit}`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications?page=${page}&limit=${limit}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -181,7 +181,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch('https://tree-backend-avvs.onrender.com/api/notifications/stats', {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/stats`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -205,7 +205,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch(`https://tree-backend-avvs.onrender.com/api/notifications/${notificationId}/read`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/${notificationId}/read`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -230,7 +230,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch('https://tree-backend-avvs.onrender.com/api/notifications/read-all', {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/read-all`, {
         method: 'PATCH',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -255,7 +255,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch(`https://tree-backend-avvs.onrender.com/api/notifications/${notificationId}`, {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/${notificationId}`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -280,7 +280,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch('https://tree-backend-avvs.onrender.com/api/notifications', {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications`, {
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -305,7 +305,7 @@ export const notificationAPI = {
       const user = JSON.parse(localStorage.getItem('user'));
       const token = user?.token;
       
-      const response = await fetch('https://tree-backend-avvs.onrender.com/api/notifications/unsubscribe', {
+  const response = await fetch(`${import.meta.env.VITE_API_BASE_URL}/api/notifications/unsubscribe`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,

@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// const apiUrl = 'http://localhost:5000/api/auth';
-const apiUrl ='https://tree-backend-avvs.onrender.com/api/auth';
+const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth`;
 // Get orders with pagination
 export const getOrders = async (userId, page = 1, limit = 3) => {
   try {
@@ -23,7 +22,7 @@ export const confirmPlanting = async (orderId, userId, quantity, userStats) => {
     const headers = token ? { Authorization: `Bearer ${token}` } : {};
     
     // Update user stats
-    await axios.post(`https://tree-backend-avvs.onrender.com/api/auth/update/profile`, {
+  await axios.post(`${apiUrl}/update/profile`, {
       _id: userId,
       ...userStats
     }, {

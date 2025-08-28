@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-//const apiUrl = 'http://localhost:5000/api/auth';
-const apiUrl ='https://tree-backend-avvs.onrender.com/api/auth';
+const apiUrl = `${import.meta.env.VITE_API_BASE_URL}/api/auth`;
 export const createOrder = async (order) => {
   try {
     const user = JSON.parse(localStorage.getItem('user'));
